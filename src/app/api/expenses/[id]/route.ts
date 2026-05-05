@@ -1,27 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma"; // นำเข้า Prisma สำหรับเชื่อมต่อ Database
 
 // ==========================================
-// Method: DELETE
-// ==========================================
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    // 1. รอรับค่า id จาก Promise
-    const { id } = await params;
-
-    // 2. นำ id ไปใช้งาน (วางโค้ดลบข้อมูลเดิมของคุณตรงนี้)
-    console.log("Deleting expense ID:", id);
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
-  }
-}
-
-// ==========================================
-// Method: GET (ถ้ามี)
+// Method: GET (ระบบกู้/ดึงข้อมูลสลิป 1 รายการ)
 // ==========================================
 export async function GET(
   request: NextRequest,
@@ -30,16 +11,24 @@ export async function GET(
   try {
     const { id } = await params;
 
-    // วางโค้ดดึงข้อมูลเดิมของคุณตรงนี้
-    
-    return NextResponse.json({ success: true, id });
+    // ค้นหาข้อมูลใน Database ด้วย Prisma
+    const expense = await prisma.expense.findUnique({
+      where: { id: id },
+    });
+
+    if (!expense) {
+      return NextResponse.json({ error: "ไม่พบข้อมูลรายการนี้" }, { status: 404 });
+    }
+
+    return NextResponse.json(expense);
   } catch (error) {
-    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
+    console.error("GET Expense Error:", error);
+    return NextResponse.json({ error: "ดึงข้อมูลไม่สำเร็จ" }, { status: 500 });
   }
 }
 
 // ==========================================
-// Method: PUT / PATCH (ถ้ามี)
+// Method: PUT / PATCH (ระบบอัปเดต/แก้ไขข้อมูล)
 // ==========================================
 export async function PUT(
   request: NextRequest,
@@ -49,10 +38,37 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
 
-    // วางโค้ดอัปเดตข้อมูลเดิมของคุณตรงนี้
-    
-    return NextResponse.json({ success: true, id });
+    // อัปเดตข้อมูลใน Database
+    const updatedExpense = await prisma.expense.update({
+      where: { id: id },
+      data: body,
+    });
+
+    return NextResponse.json({ success: true, expense: updatedExpense });
   } catch (error) {
-    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
+    console.error("UPDATE Expense Error:", error);
+    return NextResponse.json({ error: "อัปเดตข้อมูลไม่สำเร็จ" }, { status: 500 });
+  }
+}
+
+// ==========================================
+// Method: DELETE (ระบบลบข้อมูล)
+// ==========================================
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+
+    // ลบข้อมูลออกจาก Database
+    await prisma.expense.delete({
+      where: { id: id },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("DELETE Expense Error:", error);
+    return NextResponse.json({ error: "ลบข้อมูลไม่สำเร็จ" }, { status: 500 });
   }
 }
