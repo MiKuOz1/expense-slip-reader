@@ -1,0 +1,24 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  amount      Float
+  description String
+  fromBank    String?
+  toBank      String?
+  sender      String?
+  receiver    String?
+  date        DateTime
+  rawText     String?
+  imageUrl    String?
+  category    String   @default("อื่นๆ")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

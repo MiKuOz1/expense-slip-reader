@@ -1,0 +1,13 @@
+@import url('https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600&family=Sarabun:wght@400;500&display=swap');
+@import "tailwindcss";
+
+:root {
+  --pink-primary: #F4427A;
+  --pink-light: #FF8FAB;
+  --pink-pale: #FFF5F8;
+  --pink-border: #FFE4EC;
+}
+
+* { font-family: 'Sarabun', sans-serif; }
+h1, h2, .font-display { font-family: 'Kanit', sans-serif; }
+body { background: #FFF5F8; }
