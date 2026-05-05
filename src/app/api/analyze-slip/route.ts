@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+// 1️⃣ เพิ่มบรรทัดนี้เพื่อบอก Next.js ว่าห้าม Build หน้านี้ล่วงหน้า ให้รันแบบ Dynamic เสมอ
+export const dynamic = 'force-dynamic'
+
 function extractSlipData(text: string) {
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean)
   const fullText = lines.join(' ')
@@ -59,14 +62,15 @@ function extractSlipData(text: string) {
     if (companyMatch) receiver = companyMatch[1].trim()
   }
 
-  // วันที่
+  // วันที่ 
+  // 2️⃣ แก้ไขเรื่องเครื่องหมาย \ ใน String ให้ถูกต้องตามกฎ ESLint
   const thaiMonths: Record<string, string> = {
-    'ม\.ค\.|มกราคม': '01', 'ก\.พ\.|กุมภาพันธ์': '02',
-    'มี\.ค\.|มีนาคม': '03', 'เม\.ย\.|เมษายน': '04',
-    'พ\.ค\.|พฤษภาคม': '05', 'มิ\.ย\.|มิถุนายน': '06',
-    'ก\.ค\.|กรกฎาคม': '07', 'ส\.ค\.|สิงหาคม': '08',
-    'ก\.ย\.|กันยายน': '09', 'ต\.ค\.|ตุลาคม': '10',
-    'พ\.ย\.|พฤศจิกายน': '11', 'ธ\.ค\.|ธันวาคม': '12',
+    'ม\\.ค\\.|มกราคม': '01', 'ก\\.พ\\.|กุมภาพันธ์': '02',
+    'มี\\.ค\\.|มีนาคม': '03', 'เม\\.ย\\.|เมษายน': '04',
+    'พ\\.ค\\.|พฤษภาคม': '05', 'มิ\\.ย\\.|มิถุนายน': '06',
+    'ก\\.ค\\.|กรกฎาคม': '07', 'ส\\.ค\\.|สิงหาคม': '08',
+    'ก\\.ย\\.|กันยายน': '09', 'ต\\.ค\\.|ตุลาคม': '10',
+    'พ\\.ย\\.|พฤศจิกายน': '11', 'ธ\\.ค\\.|ธันวาคม': '12',
   }
 
   let date = new Date()
@@ -128,42 +132,33 @@ async function ocrWithEngine(
 
   const res = await fetch('https://api.ocr.space/parse/image', {
     method: 'POST',
-    headers: { apikey: process.env.OCR_SPACE_API_KEY! },
+    headers: { apikey: process.env.OCR_SPACE_API_KEY || '' },
     body: ocrForm,
   })
 
   const data = await res.json()
-  console.log(`OCR Engine ${engine} Response:`, JSON.stringify(data)) // 👈 debug
   return data?.ParsedResults?.[0]?.ParsedText || ''
 }
 
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData()
-    const file = formData.get('slip') as File
+    const file = formData.get('slip') as File | null
 
     if (!file) {
       return NextResponse.json({ error: 'ไม่พบไฟล์' }, { status: 400 })
     }
 
-    console.log('File received:', file.name, file.type, file.size)
-
     const bytes = await file.arrayBuffer()
     const base64 = Buffer.from(bytes).toString('base64')
     const mimeType = file.type || 'image/jpeg'
-
-    console.log('API Key exists:', !!process.env.OCR_SPACE_API_KEY)
 
     const [text1, text2] = await Promise.all([
       ocrWithEngine(base64, mimeType, '1'),
       ocrWithEngine(base64, mimeType, '2'),
     ])
 
-    console.log('Engine1:', text1)
-    console.log('Engine2:', text2)
-
     const text = text1.length >= text2.length ? text1 : text2
-    console.log('Selected:', text)
 
     if (!text) {
       return NextResponse.json(
@@ -173,7 +168,6 @@ export async function POST(req: NextRequest) {
     }
 
     const slipData = extractSlipData(text)
-    console.log('Extracted:', slipData)
 
     const expense = await prisma.expense.create({
       data: {
