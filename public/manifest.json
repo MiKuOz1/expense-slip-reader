@@ -1,0 +1,22 @@
+{
+  "name": "รายจ่ายของฉัน",
+  "short_name": "รายจ่าย",
+  "description": "บันทึกรายจ่ายด้วยการอ่านสลิป",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFF5F8",
+  "theme_color": "#F4427A",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
