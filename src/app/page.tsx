@@ -4,14 +4,14 @@ import { Plus, X } from 'lucide-react'
 import SlipUploader from '@/components/SlipUploader'
 import ExpenseList from '@/components/ExpenseList'
 
+const API = 'https://expense-slip-reader-1w9z.vercel.app'
+
 const categories = ['อาหาร', 'เดินทาง', 'ช้อปปิ้ง', 'บิล', 'โอนเงิน', 'อื่นๆ']
 
 export default function Home() {
   const [expenses, setExpenses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState('ทั้งหมด')
-
-  // Modal เพิ่มรายการเอง
   const [showAddModal, setShowAddModal] = useState(false)
   const [form, setForm] = useState({
     amount: '', description: '', category: 'อื่นๆ',
@@ -19,13 +19,11 @@ export default function Home() {
     fromBank: '', receiver: '',
   })
   const [saving, setSaving] = useState(false)
-
-  // Modal ดูรายละเอียด
   const [detailExpense, setDetailExpense] = useState<any>(null)
 
   const fetchExpenses = async () => {
     try {
-      const res = await fetch('/api/expenses')
+      const res = await fetch(`${API}/api/expenses`)
       const data = await res.json()
       setExpenses(Array.isArray(data) ? data : [])
     } catch { setExpenses([]) }
@@ -43,7 +41,7 @@ export default function Home() {
     if (!form.amount || !form.description) return alert('กรุณากรอกจำนวนเงินและรายละเอียด')
     setSaving(true)
     try {
-      const res = await fetch('/api/expenses', {
+      const res = await fetch(`${API}/api/expenses`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
@@ -65,8 +63,6 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#FFF5F8]">
       <div className="max-w-4xl mx-auto">
-
-        {/* Header */}
         <div className="bg-gradient-to-br from-[#F4427A] via-[#FF8FAB] to-[#FFB3C6] px-4 md:px-6 pt-10 pb-12">
           <p className="text-white/70 text-sm">สวัสดี 👋</p>
           <div className="flex items-center justify-between">
@@ -96,7 +92,7 @@ export default function Home() {
         </div>
 
         <div className="-mt-5">
-          <SlipUploader onSuccess={fetchExpenses} />
+          <SlipUploader onSuccess={fetchExpenses} apiUrl={API} />
         </div>
 
         <div className="mt-5 pb-10">
@@ -116,7 +112,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Modal เพิ่มรายการเอง */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-end md:items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-md p-5">
@@ -124,83 +119,55 @@ export default function Home() {
               <h2 className="font-semibold text-gray-800">เพิ่มรายการเอง</h2>
               <button onClick={() => setShowAddModal(false)}><X size={20} className="text-gray-400" /></button>
             </div>
-
             <div className="space-y-3">
               <div>
                 <label className="text-xs text-gray-500 mb-1 block">จำนวนเงิน *</label>
-                <input
-                  type="number"
-                  placeholder="0.00"
-                  value={form.amount}
+                <input type="number" placeholder="0.00" value={form.amount}
                   onChange={e => setForm(p => ({ ...p, amount: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#F4427A]"
-                />
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#F4427A]" />
               </div>
               <div>
                 <label className="text-xs text-gray-500 mb-1 block">รายละเอียด *</label>
-                <input
-                  type="text"
-                  placeholder="เช่น ค่าอาหารกลางวัน"
-                  value={form.description}
+                <input type="text" placeholder="เช่น ค่าอาหารกลางวัน" value={form.description}
                   onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#F4427A]"
-                />
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#F4427A]" />
               </div>
               <div>
                 <label className="text-xs text-gray-500 mb-1 block">ประเภท</label>
-                <select
-                  value={form.category}
-                  onChange={e => setForm(p => ({ ...p, category: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#F4427A]"
-                >
+                <select value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#F4427A]">
                   {categories.map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
               <div>
                 <label className="text-xs text-gray-500 mb-1 block">วันที่</label>
-                <input
-                  type="date"
-                  value={form.date}
+                <input type="date" value={form.date}
                   onChange={e => setForm(p => ({ ...p, date: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#F4427A]"
-                />
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#F4427A]" />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-xs text-gray-500 mb-1 block">ธนาคารต้นทาง</label>
-                  <input
-                    type="text"
-                    placeholder="เช่น SCB"
-                    value={form.fromBank}
+                  <input type="text" placeholder="เช่น SCB" value={form.fromBank}
                     onChange={e => setForm(p => ({ ...p, fromBank: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#F4427A]"
-                  />
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#F4427A]" />
                 </div>
                 <div>
                   <label className="text-xs text-gray-500 mb-1 block">ผู้รับ</label>
-                  <input
-                    type="text"
-                    placeholder="ชื่อผู้รับ"
-                    value={form.receiver}
+                  <input type="text" placeholder="ชื่อผู้รับ" value={form.receiver}
                     onChange={e => setForm(p => ({ ...p, receiver: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#F4427A]"
-                  />
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#F4427A]" />
                 </div>
               </div>
             </div>
-
-            <button
-              onClick={handleAddSubmit}
-              disabled={saving}
-              className="w-full mt-4 bg-[#F4427A] text-white rounded-xl py-3 font-medium text-sm disabled:opacity-50"
-            >
+            <button onClick={handleAddSubmit} disabled={saving}
+              className="w-full mt-4 bg-[#F4427A] text-white rounded-xl py-3 font-medium text-sm disabled:opacity-50">
               {saving ? 'กำลังบันทึก...' : 'บันทึกรายการ'}
             </button>
           </div>
         </div>
       )}
 
-      {/* Modal ดูรายละเอียด */}
       {detailExpense && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-end md:items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-md p-5">
@@ -208,7 +175,6 @@ export default function Home() {
               <h2 className="font-semibold text-gray-800">รายละเอียด</h2>
               <button onClick={() => setDetailExpense(null)}><X size={20} className="text-gray-400" /></button>
             </div>
-
             <div className="space-y-3">
               <div className="bg-[#FFF0F4] rounded-xl p-4 text-center">
                 <p className="text-3xl font-bold text-[#F4427A]">
@@ -216,7 +182,6 @@ export default function Home() {
                 </p>
                 <p className="text-sm text-gray-500 mt-1">{detailExpense.description}</p>
               </div>
-
               {[
                 { label: 'ประเภท', value: detailExpense.category },
                 { label: 'วันที่', value: new Date(detailExpense.date).toLocaleString('th-TH') },
@@ -230,7 +195,6 @@ export default function Home() {
                   <span className="text-gray-700 font-medium">{row.value}</span>
                 </div>
               ))}
-
               {detailExpense.rawText && (
                 <div className="mt-2">
                   <p className="text-xs text-gray-400 mb-1">ข้อความที่ OCR อ่านได้</p>
@@ -240,15 +204,13 @@ export default function Home() {
                 </div>
               )}
             </div>
-
             <button
               onClick={async () => {
                 if (!confirm('ลบรายการนี้?')) return
-                await fetch(`/api/expenses/${detailExpense.id}`, { method: 'DELETE' })
+                await fetch(`${API}/api/expenses/${detailExpense.id}`, { method: 'DELETE' })
                 handleDelete(detailExpense.id)
               }}
-              className="w-full mt-4 border border-red-200 text-red-400 rounded-xl py-2.5 text-sm hover:bg-red-50 transition-colors"
-            >
+              className="w-full mt-4 border border-red-200 text-red-400 rounded-xl py-2.5 text-sm hover:bg-red-50 transition-colors">
               ลบรายการนี้
             </button>
           </div>

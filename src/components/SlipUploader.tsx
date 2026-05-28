@@ -2,7 +2,7 @@
 import { useState, useCallback } from 'react'
 import { Upload, Loader2, CheckCircle } from 'lucide-react'
 
-export default function SlipUploader({ onSuccess }: { onSuccess: () => void }) {
+export default function SlipUploader({ onSuccess, apiUrl }: { onSuccess: () => void; apiUrl: string }) {
   const [uploading, setUploading] = useState(false)
   const [preview, setPreview] = useState<string | null>(null)
   const [result, setResult] = useState<any>(null)
@@ -17,7 +17,7 @@ export default function SlipUploader({ onSuccess }: { onSuccess: () => void }) {
     formData.append('slip', file)
 
     try {
-  const res = await fetch('/api/analyze-slip', { method: 'POST', body: formData })
+const res = await fetch(`${apiUrl}/api/analyze-slip`, { method: 'POST', body: formData })
   const data = await res.json()
   if (data.success) {
     setResult(data.expense)

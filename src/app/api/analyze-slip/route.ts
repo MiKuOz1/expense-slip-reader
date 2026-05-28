@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 // 1️⃣ เพิ่มบรรทัดนี้เพื่อบอก Next.js ว่าห้าม Build หน้านี้ล่วงหน้า ให้รันแบบ Dynamic เสมอ
-export const dynamic = 'force-dynamic'
 
 function extractSlipData(text: string) {
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean)

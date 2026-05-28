@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">รายจ่ายของฉัน</string>
+    <string name="title_activity_main">รายจ่ายของฉัน</string>
+    <string name="package_name">com.mikuoz.expense</string>
+    <string name="custom_url_scheme">com.mikuoz.expense</string>
+</resources>
