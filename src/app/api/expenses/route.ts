@@ -1,12 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+}
+
+export async function OPTIONS() {
+  return new Response(null, { status: 200, headers: CORS_HEADERS })
+}
+
 export async function GET() {
   try {
     const expenses = await prisma.expense.findMany({ orderBy: { date: 'desc' } })
-    return NextResponse.json(expenses)
-  } catch (error) {
-    return NextResponse.json([], { status: 200 })
+    return NextResponse.json(expenses, { headers: CORS_HEADERS })
+  } catch {
+    return NextResponse.json([], { status: 200, headers: CORS_HEADERS })
   }
 }
 
@@ -26,8 +36,8 @@ export async function POST(req: NextRequest) {
         rawText: '',
       },
     })
-    return NextResponse.json({ success: true, expense })
+    return NextResponse.json({ success: true, expense }, { headers: CORS_HEADERS })
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: error.message }, { status: 500, headers: CORS_HEADERS })
   }
 }

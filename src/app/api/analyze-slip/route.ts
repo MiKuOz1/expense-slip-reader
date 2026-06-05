@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-// 1️⃣ เพิ่มบรรทัดนี้เพื่อบอก Next.js ว่าห้าม Build หน้านี้ล่วงหน้า ให้รันแบบ Dynamic เสมอ
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+}
+
+export async function OPTIONS() {
+  return new Response(null, { status: 200, headers: CORS_HEADERS })
+}
 
 function extractSlipData(text: string) {
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean)
   const fullText = lines.join(' ')
 
-  // จำนวนเงิน
   const amountPatterns = [
     /(?:จำนวน(?:เงิน)?|ยอด|amount|total)[^\d]*(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)/i,
     /(\d{1,3}(?:,\d{3})+(?:\.\d{2})?)/,
@@ -16,22 +23,14 @@ function extractSlipData(text: string) {
   let amount = 0
   for (const pattern of amountPatterns) {
     const match = fullText.match(pattern)
-    if (match) {
-      amount = parseFloat(match[1].replace(/,/g, ''))
-      break
-    }
+    if (match) { amount = parseFloat(match[1].replace(/,/g, '')); break }
   }
 
-  // ธนาคาร
   const bankMap: Record<string, string> = {
-    'SCB|ไทยพาณิชย์': 'SCB',
-    'กสิกร|KBANK': 'KBANK',
-    'กรุงไทย|KTB': 'KTB',
-    'กรุงเทพ|BBL': 'BBL',
-    'ออมสิน|GSB': 'GSB',
-    'ทหารไทย|TTB|TMB': 'TTB',
-    'กรุงศรี|BAY': 'BAY',
-    'PromptPay|พร้อมเพย์': 'PromptPay',
+    'SCB|ไทยพาณิชย์': 'SCB', 'กสิกร|KBANK': 'KBANK',
+    'กรุงไทย|KTB': 'KTB', 'กรุงเทพ|BBL': 'BBL',
+    'ออมสิน|GSB': 'GSB', 'ทหารไทย|TTB|TMB': 'TTB',
+    'กรุงศรี|BAY': 'BAY', 'PromptPay|พร้อมเพย์': 'PromptPay',
   }
 
   let fromBank: string | null = null
@@ -43,26 +42,20 @@ function extractSlipData(text: string) {
     }
   }
 
-  // ผู้โอน
   let sender: string | null = null
   const senderMatch = text.match(
     /จาก[\s\S]{0,30}?((?:นาย|นาง(?:สาว)?|น\.ส\.|น\.ท\.|น\.อ\.)?[\s]*[ก-๙a-zA-Z]{2,}\s+[ก-๙a-zA-Z]{2,})/
   )
   if (senderMatch) sender = senderMatch[1].trim()
 
-  // ผู้รับ
   let receiver: string | null = null
-  const receiverMatch = text.match(
-    /ไปยัง[\s\S]{0,60}?([ก-๙a-zA-Z][ก-๙a-zA-Z\s\.\,\(\)]{3,})/i
-  )
+  const receiverMatch = text.match(/ไปยัง[\s\S]{0,60}?([ก-๙a-zA-Z][ก-๙a-zA-Z\s\.\,\(\)]{3,})/i)
   if (receiverMatch) receiver = receiverMatch[1].trim().split('\n')[0]
   if (!receiver) {
     const companyMatch = fullText.match(/([A-Z][A-Z\s]+CO\.,?\s?LTD\.?(?:\([^)]+\))?)/i)
     if (companyMatch) receiver = companyMatch[1].trim()
   }
 
-  // วันที่ 
-  // 2️⃣ แก้ไขเรื่องเครื่องหมาย \ ใน String ให้ถูกต้องตามกฎ ESLint
   const thaiMonths: Record<string, string> = {
     'ม\\.ค\\.|มกราคม': '01', 'ก\\.พ\\.|กุมภาพันธ์': '02',
     'มี\\.ค\\.|มีนาคม': '03', 'เม\\.ย\\.|เมษายน': '04',
@@ -99,26 +92,19 @@ function extractSlipData(text: string) {
     date.setSeconds(parseInt(timeMatch[3] || '0'))
   }
 
-  // Category
   let category = 'โอนเงิน'
   if (/อาหาร|food|restaurant|cafe/i.test(fullText)) category = 'อาหาร'
   else if (/grab|taxi|BTS|MRT|น้ำมัน|เดินทาง/i.test(fullText)) category = 'เดินทาง'
   else if (/shopee|lazada|shop|ห้าง|mall/i.test(fullText)) category = 'ช้อปปิ้ง'
   else if (/ค่าน้ำ|ค่าไฟ|bill|บิล|internet|BLUEPAY|บริการ/i.test(fullText)) category = 'บิล'
 
-  const descLine = lines.find(l =>
-    /โอน|ชำระ|จ่าย|transfer|payment|BLUEPAY/i.test(l) && l.length < 60
-  )
+  const descLine = lines.find(l => /โอน|ชำระ|จ่าย|transfer|payment|BLUEPAY/i.test(l) && l.length < 60)
   const description = descLine || (receiver ? `ชำระ ${receiver}` : 'โอนเงิน')
 
   return { amount, fromBank, toBank, sender, receiver, date, category, description }
 }
 
-async function ocrWithEngine(
-  base64: string,
-  mimeType: string,
-  engine: string
-): Promise<string> {
+async function ocrWithEngine(base64: string, mimeType: string, engine: string): Promise<string> {
   const ocrForm = new FormData()
   ocrForm.append('base64Image', `data:${mimeType};base64,${base64}`)
   ocrForm.append('language', 'tha')
@@ -127,14 +113,11 @@ async function ocrWithEngine(
   ocrForm.append('scale', 'true')
   ocrForm.append('isTable', 'true')
 
-  console.log(`Calling OCR Engine ${engine}...`)
-
   const res = await fetch('https://api.ocr.space/parse/image', {
     method: 'POST',
     headers: { apikey: process.env.OCR_SPACE_API_KEY || '' },
     body: ocrForm,
   })
-
   const data = await res.json()
   return data?.ParsedResults?.[0]?.ParsedText || ''
 }
@@ -145,7 +128,7 @@ export async function POST(req: NextRequest) {
     const file = formData.get('slip') as File | null
 
     if (!file) {
-      return NextResponse.json({ error: 'ไม่พบไฟล์' }, { status: 400 })
+      return NextResponse.json({ error: 'ไม่พบไฟล์' }, { status: 400, headers: CORS_HEADERS })
     }
 
     const bytes = await file.arrayBuffer()
@@ -160,10 +143,7 @@ export async function POST(req: NextRequest) {
     const text = text1.length >= text2.length ? text1 : text2
 
     if (!text) {
-      return NextResponse.json(
-        { error: 'อ่านสลิปไม่ได้ กรุณาลองใหม่' },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: 'อ่านสลิปไม่ได้ กรุณาลองใหม่' }, { status: 500, headers: CORS_HEADERS })
     }
 
     const slipData = extractSlipData(text)
@@ -182,12 +162,12 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    return NextResponse.json({ success: true, expense })
+    return NextResponse.json({ success: true, expense }, { headers: CORS_HEADERS })
   } catch (error: any) {
     console.error('Analyze slip error:', error)
     return NextResponse.json(
       { error: error?.message || 'วิเคราะห์ไม่สำเร็จ กรุณาลองใหม่' },
-      { status: 500 }
+      { status: 500, headers: CORS_HEADERS }
     )
   }
 }
