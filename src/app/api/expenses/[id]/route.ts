@@ -11,10 +11,6 @@ export async function OPTIONS() {
   return new Response(null, { status: 200, headers: CORS_HEADERS })
 }
 
-export function generateStaticParams() {
-  return []
-}
-
 export async function DELETE(
   _: NextRequest,
   { params }: { params: Promise<{ id: string }> }
