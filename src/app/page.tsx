@@ -207,7 +207,10 @@ export default function Home() {
             <button
               onClick={async () => {
                 if (!confirm('ลบรายการนี้?')) return
-                await fetch(`${API}/api/expenses/${detailExpense.id}`, { method: 'DELETE' })
+                await fetch(`${API}/api/expenses/${detailExpense.id}`, {
+  method: 'DELETE',
+  headers: { 'Content-Type': 'application/json' },
+})
                 handleDelete(detailExpense.id)
               }}
               className="w-full mt-4 border border-red-200 text-red-400 rounded-xl py-2.5 text-sm hover:bg-red-50 transition-colors">
